@@ -56,9 +56,11 @@ Invoke-RestMethod http://127.0.0.1:8888/health
 ### 3. 安装油猴脚本
 
 1. 安装 Tampermonkey。
-2. 新建脚本。
-3. 复制 `scripts/userscripts/glm-coding-helper.user.js` 内容并保存。
+2. 打开仓库根目录的 `glm-coding-helper.user.js`。
+3. 复制全部内容，新建 Tampermonkey 脚本并保存。
 4. 打开 GLM Coding Plan 页面。
+
+仓库根目录的 `glm-coding-helper.user.js` 是给普通用户安装的入口；`scripts/userscripts/` 只是保留给开发和旧路径兼容。
 
 脚本默认连接本地后端：
 
