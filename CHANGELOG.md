@@ -16,6 +16,11 @@
   - `/health` 端点区分 starting/ok + ready_workers/alive_workers 计数
   - 冷启动 24s → 7.6s → 2.6s（16-core SSD，磁盘预热 + non-blocking lifespan）
   - ⚠️ 此为可选后端，原 `scripts/tools/` 启动方式仍可用
+- 合并 PR #11（danny0119 提交）：pipeline 后端双击启动器
+  - `start-backend-pipeline.cmd` 双击启动入口
+  - `start-backend-pipeline.ps1` venv 自动检测（`venv/` 或 `.venv_paddle/`）+ 依赖检查（fastapi/uvicorn/psutil）+ 缺失时自动 pip install
+  - 端口占用**中文提示**（含 PID/进程名/命令行），杀进程前需用户确认
+  - 启动命令：双击 `start-backend-pipeline.cmd` 或 `pwsh start-backend-pipeline.ps1`
 
 ## 2026-06-06
 
