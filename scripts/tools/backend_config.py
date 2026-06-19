@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
@@ -13,6 +14,32 @@ ROOT = Path(__file__).resolve().parents[2]
 
 TRUE_VALUES = {"1", "true", "yes", "on", "y"}
 FALSE_VALUES = {"0", "false", "no", "off", "n"}
+
+
+def apply_portable_env_defaults() -> None:
+    if os.name == "nt":
+        return
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    os.environ.setdefault("PIP_CACHE_DIR", str(ROOT / ".cache" / "pip"))
+    os.environ.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
+    os.environ.setdefault("XDG_CONFIG_HOME", str(ROOT / ".config"))
+    os.environ.setdefault("PADDLE_HOME", str(ROOT / ".paddle_home" / ".cache" / "paddle"))
+    os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(ROOT / ".paddlex_cache"))
+    os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+    os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".config" / "Ultralytics"))
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        os.environ.setdefault("CNCAPTCHA_HOST", "127.0.0.1")
+        os.environ.setdefault("CNCAPTCHA_MODE", "cpu_parallel")
+        os.environ.setdefault("CNCAPTCHA_OCR_MODE", "cpu_parallel")
+        os.environ.setdefault("CNCAPTCHA_SKIP_GPU_DETECT", "1")
+        os.environ.setdefault("CNCAPTCHA_YOLO_DEVICE", "cpu")
+        os.environ.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
+        os.environ.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
+        os.environ.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
+
+
+apply_portable_env_defaults()
 
 
 @dataclass(frozen=True)

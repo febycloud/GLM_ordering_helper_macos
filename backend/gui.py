@@ -5,6 +5,7 @@ Pipeline Backend GUI - Tk 监控面板
 定期拉取 /health 和 /recent，实时显示在状态栏和识别列表里。
 """
 import os
+import platform
 import sys
 import json
 import queue
@@ -17,6 +18,7 @@ from pathlib import Path
 from collections import deque
 import tkinter as tk
 from tkinter import ttk
+import tkinter.font as tkfont
 
 if getattr(sys, "frozen", False):
     ROOT = Path(sys._MEIPASS)
@@ -42,6 +44,33 @@ FG_WARN = "#faad14"
 FG_ERROR = "#ff4d4f"
 FG_INFO = "#1890ff"
 FG_GREY = "#8c8c8c"
+IS_MACOS = sys.platform == "darwin"
+
+
+def _font_family(preferred: list[str], fallback: str = "TkDefaultFont") -> str:
+    available = set(tkfont.families())
+    for family in preferred:
+        if family in available:
+            return family
+    return tkfont.nametofont(fallback).actual("family")
+
+
+def _platform_fonts() -> tuple[str, str]:
+    if IS_MACOS:
+        return (
+            _font_family(["SF Pro Text", ".AppleSystemUIFont", "Helvetica Neue"]),
+            _font_family(["SF Mono", "Menlo", "Monaco"], "TkFixedFont"),
+        )
+    return (
+        _font_family(["Microsoft YaHei UI", "Segoe UI", "Arial"]),
+        _font_family(["Cascadia Mono", "Consolas", "Courier New"], "TkFixedFont"),
+    )
+
+
+def _platform_window_size() -> tuple[str, tuple[int, int]]:
+    if IS_MACOS:
+        return "820x640", (720, 520)
+    return "720x600", (640, 480)
 
 state = {
     "backend_proc": None,
@@ -84,26 +113,60 @@ def _format_ts(ts: float) -> str:
     return datetime.fromtimestamp(ts).strftime("%H:%M:%S")
 
 
+def _apply_portable_env(env: dict[str, str]) -> None:
+    if os.name == "nt":
+        return
+    env.setdefault("PIP_CACHE_DIR", str(ROOT / ".cache" / "pip"))
+    env.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
+    env.setdefault("XDG_CONFIG_HOME", str(ROOT / ".config"))
+    env.setdefault("PADDLE_HOME", str(ROOT / ".paddle_home" / ".cache" / "paddle"))
+    env.setdefault("PADDLE_PDX_CACHE_HOME", str(ROOT / ".paddlex_cache"))
+    env.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+    env.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".config" / "Ultralytics"))
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        env.setdefault("CNCAPTCHA_HOST", "127.0.0.1")
+        env.setdefault("CNCAPTCHA_MODE", "cpu_parallel")
+        env.setdefault("CNCAPTCHA_OCR_MODE", "cpu_parallel")
+        env.setdefault("CNCAPTCHA_SKIP_GPU_DETECT", "1")
+        env.setdefault("CNCAPTCHA_YOLO_DEVICE", "cpu")
+        env.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
+        env.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
+        env.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
+
+
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("GLM Coding Captcha - Pipeline Backend")
-        self.root.geometry("720x600")
+        geometry, minsize = _platform_window_size()
+        self.root.geometry(geometry)
         self.root.configure(bg=BG)
-        self.root.minsize(640, 480)
+        self.root.minsize(*minsize)
+        self.ui_font, self.mono_font = _platform_fonts()
+
+        if IS_MACOS:
+            try:
+                self.root.tk.call("tk::unsupported::MacWindowStyle", "style", self.root._w, "document", "closeBox resizable")
+            except tk.TclError:
+                pass
 
         style = ttk.Style()
         try:
-            style.theme_use("clam")
+            style.theme_use("aqua" if IS_MACOS else "clam")
         except tk.TclError:
             pass
-        style.configure("TLabel", background=BG, font=("Microsoft YaHei UI", 10))
-        style.configure("Status.TLabel", font=("Microsoft YaHei UI", 12, "bold"))
-        style.configure("Big.TLabel", font=("Microsoft YaHei UI", 14, "bold"))
-        style.configure("Ok.TLabel", foreground=FG_SUCCESS, font=("Microsoft YaHei UI", 11, "bold"))
-        style.configure("Warn.TLabel", foreground=FG_WARN, font=("Microsoft YaHei UI", 11, "bold"))
-        style.configure("Err.TLabel", foreground=FG_ERROR, font=("Microsoft YaHei UI", 11, "bold"))
-        style.configure("Info.TLabel", foreground=FG_INFO, font=("Microsoft YaHei UI", 11, "bold"))
+        style.configure("TFrame", background=BG)
+        style.configure("TLabel", background=BG, font=(self.ui_font, 10))
+        style.configure("TLabelFrame", background=BG, font=(self.ui_font, 10))
+        style.configure("TLabelFrame.Label", background=BG, font=(self.ui_font, 10, "bold"))
+        style.configure("Treeview", rowheight=26 if IS_MACOS else 22, font=(self.ui_font, 10))
+        style.configure("Treeview.Heading", font=(self.ui_font, 10, "bold"))
+        style.configure("Status.TLabel", font=(self.ui_font, 12, "bold"))
+        style.configure("Big.TLabel", font=(self.ui_font, 15 if IS_MACOS else 14, "bold"))
+        style.configure("Ok.TLabel", foreground=FG_SUCCESS, font=(self.ui_font, 11, "bold"))
+        style.configure("Warn.TLabel", foreground=FG_WARN, font=(self.ui_font, 11, "bold"))
+        style.configure("Err.TLabel", foreground=FG_ERROR, font=(self.ui_font, 11, "bold"))
+        style.configure("Info.TLabel", foreground=FG_INFO, font=(self.ui_font, 11, "bold"))
 
         self._build_ui()
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -114,8 +177,10 @@ class App:
 
     def _build_ui(self):
         # 顶部状态栏
-        top = ttk.Frame(self.root, padding="12 10")
+        pad_x = 16 if IS_MACOS else 12
+        top = ttk.Frame(self.root, padding=f"{pad_x} 12")
         top.pack(fill=tk.X)
+        top.columnconfigure(1, weight=1)
 
         ttk.Label(top, text="智谱 GLM 验证码后端 (Pipeline)", style="Big.TLabel").grid(
             row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 8))
@@ -140,14 +205,14 @@ class App:
 
         # 中间：最近识别结果
         mid = ttk.LabelFrame(self.root, text="最近识别结果（最新在上）", padding="8")
-        mid.pack(fill=tk.BOTH, expand=True, padx=12, pady=(4, 4))
+        mid.pack(fill=tk.BOTH, expand=True, padx=pad_x, pady=(4, 6))
 
         cols = ("time", "prompt", "pred", "conf", "ms", "yolo", "ocr", "req")
         self.tree = ttk.Treeview(mid, columns=cols, show="headings", height=8)
         for col, w, anchor in [
-            ("time", 70, tk.W), ("prompt", 90, tk.W), ("pred", 110, tk.W),
-            ("conf", 60, tk.E), ("ms", 60, tk.E), ("yolo", 60, tk.E),
-            ("ocr", 60, tk.E), ("req", 60, tk.E),
+            ("time", 76, tk.W), ("prompt", 100, tk.W), ("pred", 130, tk.W),
+            ("conf", 70, tk.E), ("ms", 70, tk.E), ("yolo", 70, tk.E),
+            ("ocr", 70, tk.E), ("req", 70, tk.E),
         ]:
             self.tree.heading(col, text=col.upper())
             self.tree.column(col, width=w, anchor=anchor)
@@ -161,10 +226,10 @@ class App:
 
         # 底部：实时日志
         bot = ttk.LabelFrame(self.root, text="后端日志（stdout）", padding="6")
-        bot.pack(fill=tk.BOTH, expand=False, padx=12, pady=(0, 8))
-        self.log_box = tk.Text(bot, height=10, font=("Consolas", 9),
+        bot.pack(fill=tk.BOTH, expand=False, padx=pad_x, pady=(0, 10))
+        self.log_box = tk.Text(bot, height=10, font=(self.mono_font, 11 if IS_MACOS else 9),
                                bg="#1e1e1e", fg="#d4d4d4", insertbackground="#d4d4d4",
-                               relief=tk.FLAT, wrap=tk.NONE)
+                               relief=tk.FLAT, wrap=tk.NONE, padx=8, pady=6)
         self.log_box.tag_configure("info", foreground="#d4d4d4")
         self.log_box.tag_configure("ready", foreground=FG_SUCCESS)
         self.log_box.tag_configure("warn", foreground=FG_WARN)
@@ -207,6 +272,7 @@ class App:
         env = os.environ.copy()
         env["PYTHONIOENCODING"] = "utf-8"
         env["PYTHONUTF8"] = "1"
+        _apply_portable_env(env)
         cmd = [sys.executable, "-m", "backend.server"]
         self._append_log(f"$ {sys.executable} -m backend.server")
         try:

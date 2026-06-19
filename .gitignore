@@ -14,6 +14,9 @@ __pycache__/
 .venv_paddle_gpu/
 
 # Paddle / model caches
+.cache/
+.config/
+.home/
 .paddle_home/
 .paddle_home_gpu/
 .paddlex_cache/

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,29 @@ GPU_VENV = ROOT / ".venv_paddle_gpu"
 CPU_REQ = ROOT / "requirements-backend-cpu.txt"
 GPU_REQ = ROOT / "requirements-backend-gpu.txt"
 YOLO_WEIGHT = ROOT / "models" / "weights" / "yolo-captcha-detector.pt"
+
+
+def apply_portable_env() -> None:
+    if os.name == "nt":
+        return
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    os.environ.setdefault("PIP_CACHE_DIR", str(ROOT / ".cache" / "pip"))
+    os.environ.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
+    os.environ.setdefault("XDG_CONFIG_HOME", str(ROOT / ".config"))
+    os.environ.setdefault("PADDLE_HOME", str(ROOT / ".paddle_home" / ".cache" / "paddle"))
+    os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(ROOT / ".paddlex_cache"))
+    os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+    os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".config" / "Ultralytics"))
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        os.environ.setdefault("CNCAPTCHA_HOST", "127.0.0.1")
+        os.environ.setdefault("CNCAPTCHA_MODE", "cpu_parallel")
+        os.environ.setdefault("CNCAPTCHA_OCR_MODE", "cpu_parallel")
+        os.environ.setdefault("CNCAPTCHA_SKIP_GPU_DETECT", "1")
+        os.environ.setdefault("CNCAPTCHA_YOLO_DEVICE", "cpu")
+        os.environ.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
+        os.environ.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
+        os.environ.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
 
 
 def venv_python(venv: Path) -> Path:
@@ -108,6 +132,8 @@ def check_assets() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    apply_portable_env()
+
     parser = argparse.ArgumentParser(description="Create local backend environments for CNCAPTCHA.")
     parser.add_argument("--target", choices=["auto", "cpu", "gpu", "both"], default="auto")
     parser.add_argument("--recreate", action="store_true", help="Delete and recreate selected virtualenvs")
@@ -142,10 +168,16 @@ def main(argv: list[str] | None = None) -> int:
     check_assets()
 
     print("\nDone.", flush=True)
-    print("Start GUI backend:", flush=True)
-    print("  python scripts\\tools\\start_backend.py --mode auto", flush=True)
-    print("Start headless backend:", flush=True)
-    print("  python scripts\\tools\\start_backend.py --headless --mode auto", flush=True)
+    if os.name == "nt":
+        print("Start GUI backend:", flush=True)
+        print("  python scripts\\tools\\start_backend.py --mode auto", flush=True)
+        print("Start headless backend:", flush=True)
+        print("  python scripts\\tools\\start_backend.py --headless --mode auto", flush=True)
+    else:
+        print("Start GUI backend:", flush=True)
+        print("  ./start-backend-pipeline-gui.command", flush=True)
+        print("Start headless backend:", flush=True)
+        print("  CNCAPTCHA_HEADLESS=1 ./scripts/start_backend.sh", flush=True)
     return 0
 
 

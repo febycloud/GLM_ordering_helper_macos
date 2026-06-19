@@ -16,6 +16,7 @@ import multiprocessing as mp
 import threading
 from pathlib import Path
 from contextlib import asynccontextmanager
+import platform
 
 import psutil
 import uvicorn
@@ -34,12 +35,25 @@ if str(ROOT) not in os.sys.path:
 # ── 加载 config.json（支持可配置 worker 数）─────────────────
 CONFIG_PATH = ROOT / "config.json"
 
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None or value.strip() == "":
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def _smart_defaults():
     """按 CPU 核数智能分配 YOLO / OCR worker 数"""
     try:
         cores = psutil.cpu_count(logical=False) or psutil.cpu_count(logical=True) or 4
     except Exception:
         cores = 4
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        # MacBook Air M2 has no fan; keep sustained CPU load conservative.
+        return 1, 2
     yolo = max(1, min(4, cores // 4))
     ocr  = max(2, min(8, cores // 2))
     # 留 1-2 核给系统
@@ -58,8 +72,9 @@ if CONFIG_PATH.exists():
         _cfg = {}
 else:
     _cfg = {}
-N_YOLO = max(1, int(_cfg.get("workers", _DEFAULT["workers"])))
-N_OCR  = max(1, int(_cfg.get("ocr_workers", _DEFAULT["ocr_workers"])))
+N_YOLO = max(1, _env_int("CNCAPTCHA_PIPELINE_YOLO_WORKERS", int(_cfg.get("workers", _DEFAULT["workers"]))))
+N_OCR  = max(1, _env_int("CNCAPTCHA_PIPELINE_OCR_WORKERS", int(_cfg.get("ocr_workers", _DEFAULT["ocr_workers"]))))
+HOST   = os.environ.get("CNCAPTCHA_HOST", "127.0.0.1")
 PORT   = max(1, int(_cfg.get("port", _DEFAULT["port"])))
 
 if not CONFIG_PATH.exists():
@@ -426,7 +441,7 @@ async def handle_batch_direct(data: BatchCaptchaRequest):
 
 def main():
     mp.freeze_support()
-    uvicorn.run("backend.server:app", host="0.0.0.0", port=PORT, log_level="info")
+    uvicorn.run("backend.server:app", host=HOST, port=PORT, log_level="info")
 
 
 if __name__ == "__main__":

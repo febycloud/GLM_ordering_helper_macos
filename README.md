@@ -1,6 +1,6 @@
 ﻿# 智谱 GLM Coding Plan 抢购助手 + 本地 OCR 自动验证码
 
-这是一个面向智谱 GLM Coding Plan 的抢购辅助项目，包含 Tampermonkey 油猴脚本和本地 CPU/GPU OCR 后端，用于限时抢购流程辅助、一键启动后端、中文点选验证码自动识别、验证码自动点击、套餐按钮提前可点、限流重试和多窗口监控。目前仅适配 Google Chrome 和 Microsoft Edge，推荐使用 Chrome。
+这是一个面向智谱 GLM Coding Plan 的抢购辅助项目，包含 Tampermonkey 油猴脚本和本地 CPU/GPU OCR 后端，用于限时抢购流程辅助、一键启动后端、中文点选验证码自动识别、验证码自动点击、套餐按钮提前可点、限流重试和多窗口监控。目前前端脚本适配 Google Chrome 和 Microsoft Edge，推荐使用 Chrome；本地后端 GUI 已提供 Windows 和 macOS 启动方式。
 
 关键词：GLM Coding Rush、GLM Coding Plan 抢购助手、GLM Coding Plan 抢购脚本、GLM Coding Plan 一键抢购、GLM Coding 一键启动、智谱 GLM Coding 抢购、智谱编程套餐抢购、GLM Coding 油猴脚本、Tampermonkey userscript、Auto-Purchase Userscript、自动解锁售罄、限流重试、多窗口并发、本地 OCR、CPU OCR、GPU OCR、中文点选验证码、验证码自动点击、订阅助手。
 
@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/e1a56d07-5c4d-4aa1-a567-909dd25bd037
 - 默认不自动关闭无效支付链接/限流弹窗，需要在配置面板里手动开启
 - 默认使用作者内置折扣入口进入 GLM Coding Plan
 
-注意：目前仅适配 Chrome 和 Edge。我测试了 1080p-1920p、桌面 100%-150% 放大倍率、浏览器 50%-125% 缩放。如果遇到显示或点击问题，建议先调整为 1920p、桌面 100%-125% 放大、浏览器 100%。
+注意：前端脚本目前仅适配 Chrome 和 Edge。我测试了 1080p-1920p、桌面 100%-150% 放大倍率、浏览器 50%-125% 缩放。MacBook Air M2 / macOS 26 建议使用最新版 Chrome、系统显示保持“默认”或“更多空间”缩放、Chrome 页面缩放保持 `100%`，并在系统设置里确认 Chrome 有辅助功能权限（如果你启用了自动点击相关能力）。本项目默认走浏览器直传验证码原图，不依赖整屏截图，所以 Retina 分辨率不会造成坐标漂移。如果遇到显示或点击问题，优先把 Chrome 缩放恢复到 `100%`。
 
 后端配置、GPU/CPU 自动选择、worker 数、OCR 配置等说明见：
 
@@ -107,11 +107,41 @@ Greasy Fork 和仓库根目录的 `glm-coding-helper.user.js` 都是给普通用
 
 ### 4. 启动后端
 
+Windows：
+
 ```text
 start-backend-pipeline-gui.cmd
 ```
 
 首次使用如果环境没装好，会弹 PowerShell 提示，按提示输入 `1` 让它自动 `pip install`，或者先双击 `one-click-start.cmd` 装好环境再启动。
+
+macOS 26：
+
+```text
+setup-backend-macos.command
+GLM Coding Helper.command
+```
+
+首次使用先双击 `setup-backend-macos.command` 安装 CPU 后端环境；之后日常启动双击 `GLM Coding Helper.command`（或 `start-backend-pipeline-gui.command`）。如果 macOS 提示无法打开，可以在终端里运行：
+
+```bash
+chmod +x "GLM Coding Helper.command" setup-backend-macos.command start-backend-pipeline-gui.command uninstall-macos.command scripts/start_backend.sh scripts/portable_env.sh
+./setup-backend-macos.command
+./"GLM Coding Helper.command"
+```
+
+macOS 版本默认把 Python 环境、pip 缓存、Paddle/PaddleX 缓存和 Ultralytics 配置放在当前项目文件夹里，便于整体删除。
+
+MacBook Air M2 默认使用 CPU-only 配置：
+
+```text
+YOLO worker: 1
+OCR worker: 2
+YOLO device: cpu
+监听端口: 8888（保持不变）
+```
+
+这个配置更适合无风扇 MacBook Air，避免长时间满载。想临时加速可以在终端启动前设置 `CNCAPTCHA_PIPELINE_OCR_WORKERS=3`，但不建议日常默认开启。
 
 后端启动后默认监听：
 
@@ -128,7 +158,7 @@ https://www.bigmodel.cn/glm-coding
 ## 抢购步骤
 
 1. 先安装好油猴插件，配置好油猴脚本。使用 Chrome 时要在扩展页面开启开发者模式，然后找到 Tampermonkey 详情，把“允许用户脚本”“在无痕模式下启用”“允许访问文件网址”按需打开。
-2. 下载并解压 Release 包，双击 `start-backend-pipeline-gui.cmd` 启动本地后端。
+2. 下载并解压 Release 包，Windows 双击 `start-backend-pipeline-gui.cmd`，macOS 双击 `GLM Coding Helper.command` 启动本地后端。
 3. 打开 GLM Coding 页面测试脚本是否正常，脚本会自动补上内置优惠入口。
 4. 每天 9 点 30 分前进入抢购页面准备，晚了可能就打不开了。提前准备好手机支付宝付款。
 5. 多开几个窗口，等快到 10 点的时候点击好验证码但不要确定，等 10 点一到再按确定。**窗口不要开太多，最好 1-2 个，最多 2 个**（脚本弹窗上限仍为 10，按需选择）。窗口开得越多，请求数量按窗口数放大，撞 RPM 上限的概率越高，近期已有大量高并发脚本因此全轮失败。
@@ -204,10 +234,11 @@ https://www.bigmodel.cn/glm-coding
 
 启动（任选其一）：
 ```powershell
-# 方式 1：双击 start-backend-pipeline-gui.cmd（推荐 Windows 用户，弹 GUI 窗口）
-# 方式 2：命令行手动
+# 方式 1：双击 start-backend-pipeline-gui.cmd（Windows，弹 GUI 窗口）
+# 方式 2：双击 start-backend-pipeline-gui.command（macOS，弹 GUI 窗口）
+# 方式 3：命令行手动
 pwsh start-backend-pipeline-gui.ps1
-# 方式 3：直接跑后端
+# 方式 4：直接跑后端
 python backend/server.py
 ```
 
@@ -236,6 +267,11 @@ start-backend-pipeline-gui.cmd
 | `glm-coding-helper.user.js` | 给 Tampermonkey 安装的主脚本 |
 | `one-click-start.cmd` | 首次安装环境（CPU 依赖） |
 | `start-backend-pipeline-gui.cmd` | 日常启动 pipeline 后端 + 弹 Tk 可视化窗口 |
+| `GLM Coding Helper.command` | macOS 双击启动入口 |
+| `setup-backend-macos.command` | macOS 首次安装 CPU 后端环境 |
+| `start-backend-pipeline-gui.command` | macOS 日常启动 pipeline 后端 + 弹 Tk 可视化窗口 |
+| `scripts/start_backend.sh` | macOS/Linux 命令行启动脚本 |
+| `uninstall-macos.command` | macOS 删除本地环境和缓存 |
 | `scripts/` | 后端和打包脚本 |
 | `backend/` | Pipeline 后端（FastAPI + 多进程 YOLO→OCR） |
 | `models/` | 本地识别模型 |
@@ -267,6 +303,29 @@ powershell -ExecutionPolicy Bypass -File scripts\start_backend.ps1 -Mode cpu -Cp
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\start_backend.ps1 -Mode gpu
 ```
+
+macOS 26 命令行启动：
+
+```bash
+# 首次安装 CPU 后端环境
+python3 scripts/setup_backend.py --target cpu
+
+# GUI 启动
+./"GLM Coding Helper.command"
+
+# 无 GUI/headless 启动
+CNCAPTCHA_HEADLESS=1 ./scripts/start_backend.sh
+```
+
+Apple Silicon / Intel Mac 默认使用 CPU 模式；GPU 模式主要面向 NVIDIA CUDA 环境。
+
+macOS 卸载/清理本地环境：
+
+```text
+uninstall-macos.command
+```
+
+双击后按提示输入 `DELETE`，会删除本项目目录下的 `.venv_paddle`、`.venv_paddle_gpu`、`.cache`、`.config`、`.paddle_home`、`.paddlex_cache` 等本地环境和缓存。清理完成后，直接删除整个项目文件夹即可。
 
 GPU 模式需要确认 `.venv_paddle_gpu` 里安装的是 GPU 版 PyTorch。`paddlepaddle-gpu` 只负责 OCR，YOLO/Ultralytics 依赖 `torch`；如果 `torch` 是 CPU 版，后端仍会跑起来，但 YOLO 会走 CPU。
 
@@ -370,6 +429,3 @@ https://greasyfork.org/zh-CN/scripts/572157-glm-coding-plan%E6%8A%A2%E8%B4%AD%E5
 | 35px | `363/379 = 95.8%` | `379/379 = 100%` |
 
 结论：轻量 `ddddocr` 管道的优势是体积小、速度快，适合作为快速模式或备用模式；本项目当前 PP-OCRv5 + YOLO + 提示字约束方案的缺点是慢、环境大，但在本地隐藏集和压力测试中稳定性更好。
-
-
-
