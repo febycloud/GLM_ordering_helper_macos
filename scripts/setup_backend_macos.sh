@@ -1,7 +1,6 @@
 #!/bin/bash
 # GLM Coding Helper 后端环境搭建（macOS / 仅 CPU）
 #
-# 等价于 Windows 的 bootstrap_windows.ps1 + one_click_start.ps1：
 #   1. 检测 Apple Silicon 和 Python 3.12
 #   2. 创建 .venv_paddle
 #   3. pip install -r requirements-backend-cpu.txt

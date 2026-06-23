@@ -1,7 +1,6 @@
 # macOS 安装与使用说明
 
-本文档面向 **macOS 用户**，说明如何在本机安装并启动 GLM Coding Helper 的本地 OCR 后端。
-Windows 用户请直接看 [README.md](../README.md) 和 [backend_config.md](backend_config.md)。
+本文档面向 **macOS 用户**，说明如何在本机安装并启动 GLM Coding Helper 的本地 OCR 后端。本分支已移除 Windows PowerShell/CMD 启动脚本。
 
 ## 适用范围
 
@@ -10,18 +9,18 @@ Windows 用户请直接看 [README.md](../README.md) 和 [backend_config.md](bac
 | 系统 | macOS 12–15（PaddlePaddle 官方支持范围） |
 | 架构 | Apple Silicon（arm64，M1 及后续型号） |
 | 后端 | **仅支持 CPU**（见下方「已知限制」） |
-| 验证码识别 | 与 Windows 版完全一致（YOLO + PaddleOCR CPU 流水线） |
+| 验证码识别 | YOLO + PaddleOCR CPU 流水线 |
 
 ## 重要前提：macOS 版怎么识别验证码
 
-和 Windows 一样，本项目主用的是 **pipeline 后端**（`backend/server.py`）：
+本项目主用的是 **pipeline 后端**（`backend/server.py`）：
 
 1. 油猴脚本直接从腾讯验证码组件抓取原图；
 2. 原图 base64 发送到本地后端 `/captcha_direct`；
 3. 后端用本地 YOLO + PaddleOCR 识别；
 4. 脚本按识别坐标点击文字。
 
-也就是说，**识别过程不依赖屏幕截图**。Windows 版里那个自动截图验证码弹窗的功能（`scripts/monitor/window_helper.py`）是纯 Win32 实现，**macOS 不支持**，但这不影响主流程——油猴脚本会把图直接发过来。
+也就是说，**识别过程不依赖屏幕截图**。旧版自动截图验证码弹窗功能依赖 Win32，**macOS 不支持**，但这不影响主流程——油猴脚本会把图直接发过来。
 
 ## 前置条件
 
@@ -177,16 +176,16 @@ CNCAPTCHA_PORT=8889 ./.venv_paddle/bin/python -m backend.server
 
 注意油猴脚本默认连 `http://127.0.0.1:8888`，换端口后需要在油猴脚本配置里同步修改后端地址。
 
-## macOS 与 Windows 版差异
+## macOS 版说明
 
-| 项 | Windows | macOS |
-| --- | --- | --- |
-| 启动脚本 | `.cmd` + PowerShell（`.ps1`） | `.command` + bash（`.sh`） |
-| GPU 模式 | 支持（需 NVIDIA GPU + CUDA） | 不支持（仅 CPU） |
-| 自动截图弹窗 | 支持（Win32） | 不支持（走油猴脚本发图） |
-| 环境搭建 | `bootstrap_windows.ps1` | `scripts/setup_backend_macos.sh` |
-| 支持架构 | x86_64 | arm64（Apple Silicon） |
-| 识别模型 | YOLO + PaddleOCR | YOLO + PaddleOCR |
+| 项 | macOS |
+| --- | --- |
+| 启动脚本 | `.command` + bash（`.sh`） |
+| GPU 模式 | 不支持（仅 CPU） |
+| 自动截图弹窗 | 不支持（走油猴脚本发图） |
+| 环境搭建 | `scripts/setup_backend_macos.sh` |
+| 支持架构 | arm64（Apple Silicon） |
+| 识别模型 | YOLO + PaddleOCR |
 
 ## 安装后验证
 
