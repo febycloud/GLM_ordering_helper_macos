@@ -67,22 +67,22 @@ python3.12 --version
 
 首次安装会从 PyPI 拉取 PaddlePaddle、Ultralytics 等包，**mac 的 wheel 体积较大**，请保持网络畅通。必要时可走国内镜像（见下文「命令行手动安装」）。
 
-## 一键安装（推荐）
+## 一键安装并启动 GUI（推荐）
 
 下载 Release 压缩包并解压后，双击：
 
 ```text
-one-click-start.command
+GLM Coding Helper.command
 ```
 
 首次双击如果被 macOS 的 Gatekeeper 拦截（提示「无法打开」），用以下任一方式解决：
 
-- 在 Finder 里**右键点击** `one-click-start.command` → 选择「打开」→ 在弹窗里点「打开」；
+- 在 Finder 里**右键点击** `GLM Coding Helper.command` → 选择「打开」→ 在弹窗里点「打开」；
 - 或在终端里赋予可执行权限后运行：
 
 ```bash
-chmod +x one-click-start.command
-./one-click-start.command
+chmod +x "GLM Coding Helper.command"
+./"GLM Coding Helper.command"
 ```
 
 这个脚本会自动完成：
@@ -91,7 +91,7 @@ chmod +x one-click-start.command
 2. 创建虚拟环境 `.venv_paddle`；
 3. 安装 CPU 依赖（`requirements-backend-cpu.txt`）；
 4. 检查 YOLO 权重；
-5. 以 headless 模式启动后端。
+5. 打开 Tk GUI，并启动后端。
 
 启动成功后监听：
 
@@ -101,13 +101,7 @@ http://127.0.0.1:8888
 
 ## 日常启动（带可视化窗口）
 
-环境装好后，日常使用双击：
-
-```text
-start-backend-pipeline-gui.command
-```
-
-它会弹出 Tk 窗口，实时显示：
+环境装好后，日常仍然双击 `GLM Coding Helper.command`。它会弹出 Tk 窗口，实时显示：
 
 - **顶部状态栏**：系统状态（启动中 / 运行中）、YOLO / OCR worker 数、监听地址；
 - **中间识别列表**：最近识别结果（提示字、预测字、置信度、yolo/ocr 耗时）；
