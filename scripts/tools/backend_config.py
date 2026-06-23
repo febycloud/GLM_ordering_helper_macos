@@ -116,6 +116,11 @@ def _gpu_probe_env() -> dict[str, str]:
 
 
 def detect_gpu(timeout: float = 45.0) -> tuple[bool, str]:
+    # macOS 没有 CUDA：PaddlePaddle 在 mac 上只提供 CPU wheel，
+    # paddlepaddle-gpu 和 nvidia-* 依赖也无法安装。直接跳过 GPU 探测。
+    if sys.platform == "darwin":
+        return False, "GPU unavailable on macOS (PaddlePaddle ships CPU-only wheels)"
+
     if parse_bool(os.environ.get("CNCAPTCHA_SKIP_GPU_DETECT"), False):
         return False, "skipped by CNCAPTCHA_SKIP_GPU_DETECT"
 
@@ -153,7 +158,7 @@ def detect_gpu(timeout: float = 45.0) -> tuple[bool, str]:
     if not parse_bool(os.environ.get("CNCAPTCHA_STRICT_GPU_DETECT"), True):
         return True, output
 
-    model_name = os.environ.get("CNCAPTCHA_GPU_OCR_MODEL", "PP-OCRv5_server_rec")
+    model_name = os.environ.get("CNCAPTCHA_GPU_OCR_MODEL", "PP-OCRv6_tiny_rec")
     device = os.environ.get("CNCAPTCHA_GPU_OCR_DEVICE", "gpu:0")
     engine = os.environ.get("CNCAPTCHA_GPU_OCR_ENGINE", "paddle_dynamic")
     ocr_probe = (
@@ -228,9 +233,9 @@ def resolve_backend_config(source: str = "env") -> BackendConfig:
             minimum=1,
         ),
         cpu_model=os.environ.get("CNCAPTCHA_CPU_OCR_MODEL", "hybrid"),
-        cpu_fast_model=os.environ.get("CNCAPTCHA_CPU_OCR_FAST_MODEL", "PP-OCRv5_mobile_rec"),
-        cpu_fallback_model=os.environ.get("CNCAPTCHA_CPU_OCR_FALLBACK_MODEL", "PP-OCRv5_server_rec"),
-        gpu_model=os.environ.get("CNCAPTCHA_GPU_OCR_MODEL", "PP-OCRv5_server_rec"),
+        cpu_fast_model=os.environ.get("CNCAPTCHA_CPU_OCR_FAST_MODEL", "PP-OCRv6_tiny_rec"),
+        cpu_fallback_model=os.environ.get("CNCAPTCHA_CPU_OCR_FALLBACK_MODEL", "PP-OCRv6_medium_rec"),
+        gpu_model=os.environ.get("CNCAPTCHA_GPU_OCR_MODEL", "PP-OCRv6_tiny_rec"),
         gpu_device=os.environ.get("CNCAPTCHA_GPU_OCR_DEVICE", "gpu:0"),
         constrained_decode=parse_bool(os.environ.get("CNCAPTCHA_OCR_CONSTRAINED"), True),
         gpu_available=gpu_available,

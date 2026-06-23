@@ -11,8 +11,12 @@ import argparse
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-import tkinter as tk
-from tkinter import ttk
+try:
+    import tkinter as tk
+    from tkinter import ttk
+except ImportError:
+    tk = None
+    ttk = None
 
 sys.setswitchinterval(0.001)
 
@@ -31,13 +35,18 @@ from backend_config import (
     resolve_backend_config,
 )
 
+capture_browser_window = None
+find_windows = None
+if sys.platform == "win32":
+    try:
+        from window_helper import capture_browser_window, find_windows
+    except (ImportError, AttributeError, OSError) as exc:
+        print(f"Warning: Windows monitor module unavailable: {exc}")
+
 try:
-    from window_helper import capture_browser_window, find_windows
     from captcha_crop import crop_challenge_image
 except ImportError:
-    print("Warning: monitor modules not found.")
-    capture_browser_window = None
-    find_windows = None
+    print("Warning: captcha crop module not found.")
     crop_challenge_image = None
 
 DATASET_DIR = ROOT / "dataset" / "auto_captured"
@@ -271,15 +280,25 @@ def recognize_captcha(image_path, prompt_chars, crop_rect=None):
         print(f"[CAPTURE] sending to worker: {image_path} chars={''.join(prompt_chars)}", flush=True)
         proc.stdin.write(req.encode("utf-8"))
         proc.stdin.flush()
-        print(f"[CAPTURE] waiting for worker result...", flush=True)
+        _t0 = time.perf_counter()
         try:
             result_line = _result_queue.get(timeout=90)
         except queue.Empty:
             print(f"[CAPTURE] worker timeout!", flush=True)
             _stop_worker_proc()
             return {"error": "worker timeout", "success": False}
-        print(f"[CAPTURE] got result: {result_line.decode()[:200]}", flush=True)
-        return json.loads(result_line)
+        _elapsed_ms = (time.perf_counter() - _t0) * 1000
+        _res = json.loads(result_line)
+        # 打印识别摘要（prompt → 结果 + 耗时），GUI 日志框可见
+        if _res.get("success"):
+            _p = "".join(_res.get("prompt", []))
+            print(f"[captcha] {_p} -> {_res.get('pred_text','?')} | "
+                  f"conf={_res.get('confidence',0):.2f} end-to-end={_elapsed_ms:.0f}ms "
+                  f"(worker total={_res.get('elapsed_ms','?')}ms yolo={_res.get('yolo_ms','?')}ms "
+                  f"ocr={_res.get('ocr_ms','?')}ms) | engine={_res.get('engine','?')}", flush=True)
+        else:
+            print(f"[captcha] FAIL: {_res.get('error','?')} ({_elapsed_ms:.0f}ms)", flush=True)
+        return _res
     except Exception as e:
         import traceback; traceback.print_exc()
         return {"error": str(e), "success": False}
@@ -467,13 +486,18 @@ class CaptchaHandler(BaseHTTPRequestHandler):
                     image.save(debug_path)
                     log_to_gui(f"[direct] 调试保存: {debug_path.name} ({len(img_bytes)//1024}KB)")
 
+                    _t0 = time.perf_counter()
                     result = recognize_captcha(str(debug_path), list(chars_text), crop_rect=None)
+                    _e2e_ms = (time.perf_counter() - _t0) * 1000
 
                     if result.get("success"):
-                        log_to_gui(f"[direct] 识别成功: {result['pred_text']} conf={result['confidence']}")
+                        log_to_gui(f"[captcha] {chars_text} -> {result['pred_text']} | "
+                                   f"conf={result.get('confidence',0):.2f} end-to-end={_e2e_ms:.0f}ms "
+                                   f"(yolo={result.get('yolo_ms','?')}ms ocr={result.get('ocr_ms','?')}ms) | "
+                                   f"engine={result.get('engine','?')}")
                         state.status = f"识别完成: {result['pred_text']} ({result['confidence']})"
                     else:
-                        log_to_gui(f"[direct] 识别失败: {result.get('error', '?')}")
+                        log_to_gui(f"[captcha] FAIL: {result.get('error', '?')} ({_e2e_ms:.0f}ms)")
                         state.status = f"识别失败: {result.get('error', '?')}"
 
                     self.send_json(200, {"success": True, "result": result})
@@ -534,6 +558,8 @@ class CaptchaHandler(BaseHTTPRequestHandler):
     def log_message(self, *args): pass
 
 def run_gui():
+    if tk is None or ttk is None:
+        raise RuntimeError("Tk is unavailable; install Tk support or use --headless")
     root = tk.Tk()
     root.title("Captcha Server v2 - Auto Rush Mode")
     root.geometry("620x380")
@@ -541,9 +567,18 @@ def run_gui():
     root.configure(bg="#f0f2f5")
 
     style = ttk.Style()
-    style.configure("TLabel", background="#f0f2f5", font=("Microsoft YaHei UI", 10))
-    style.configure("Status.TLabel", font=("Microsoft YaHei UI", 12, "bold"), foreground="#1890ff")
-    style.configure("Success.TLabel", font=("Microsoft YaHei UI", 11, "bold"), foreground="#52c41a")
+
+    def _ui_font():
+        return "PingFang SC" if sys.platform == "darwin" else "Microsoft YaHei UI"
+
+    def _mono_font():
+        return "Menlo" if sys.platform == "darwin" else "Consolas"
+
+    ui_font = _ui_font()
+    mono_font = _mono_font()
+    style.configure("TLabel", background="#f0f2f5", font=(ui_font, 10))
+    style.configure("Status.TLabel", font=(ui_font, 12, "bold"), foreground="#1890ff")
+    style.configure("Success.TLabel", font=(ui_font, 11, "bold"), foreground="#52c41a")
 
     main_frame = ttk.Frame(root, padding="15")
     main_frame.pack(fill=tk.BOTH, expand=True)
@@ -552,6 +587,10 @@ def run_gui():
     ttk.Label(main_frame, text="系统状态:").grid(row=row, column=0, sticky=tk.W, pady=2)
     lbl_status = ttk.Label(main_frame, text="准备就绪", style="Status.TLabel")
     lbl_status.grid(row=row, column=1, sticky=tk.W, pady=2); row += 1
+
+    ttk.Label(main_frame, text="识别模型:").grid(row=row, column=0, sticky=tk.W, pady=2)
+    lbl_model = ttk.Label(main_frame, text="加载中…")
+    lbl_model.grid(row=row, column=1, sticky=tk.W, pady=2); row += 1
 
     ttk.Label(main_frame, text="当前提示:").grid(row=row, column=0, sticky=tk.W, pady=2)
     lbl_prompt = ttk.Label(main_frame, text="无")
@@ -565,11 +604,24 @@ def run_gui():
     lbl_save = ttk.Label(main_frame, text="无", wraplength=320)
     lbl_save.grid(row=row, column=1, sticky=tk.W, pady=2); row += 1
 
-    log_box = tk.Text(main_frame, height=13, width=70, font=("Consolas", 9), bg="#ffffff", relief=tk.FLAT)
+    log_box = tk.Text(main_frame, height=13, width=70, font=(mono_font, 9), bg="#ffffff", relief=tk.FLAT)
     log_box.grid(row=row, column=0, columnspan=3, pady=8); row += 1
 
     def update_gui():
         try:
+            # 模型行：显示当前 OCR 模式 + 主/兜底模型（每次更新，配置可能在启动后才 resolve）
+            try:
+                cfg = BACKEND_CONFIG.to_dict() if BACKEND_CONFIG else {}
+                mode = cfg.get("cpu_model", "?")
+                if mode == "hybrid":
+                    model_txt = f"hybrid | 主 {cfg.get('cpu_fast_model','?')} → 兜底 {cfg.get('cpu_fallback_model','?')}"
+                elif cfg.get("gpu_available"):
+                    model_txt = f"GPU {cfg.get('gpu_model','?')}"
+                else:
+                    model_txt = f"CPU {mode}"
+                lbl_model.config(text=model_txt)
+            except Exception:
+                pass
             if state.gui_update_needed:
                 lbl_status.config(text=state.status)
                 lbl_prompt.config(text=state.last_prompt)
