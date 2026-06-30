@@ -249,9 +249,15 @@ async def lifespan(app: FastAPI):
     # ── 预热磁盘缓存：主进程先读模型文件，worker 启动时走内存 ──
     def _warm_disk_cache():
         model_files = list((ROOT / "models" / "weights").glob("*.pt"))
-        ocr_dir = ROOT / "official_models" / "PP-OCRv5_server_rec_safetensors"
-        if ocr_dir.exists():
-            model_files += list(ocr_dir.glob("*.safetensors"))
+        # OCR 权重可能放在仓库根 official_models/，也可能被 PaddleX 缓存到
+        # .paddlex_cache/official_models/ 下；两种布局都扫描，避免漏掉真实文件。
+        ocr_dirs = [
+            ROOT / "official_models",
+            ROOT / ".paddlex_cache" / "official_models",
+        ]
+        for ocr_dir in ocr_dirs:
+            if ocr_dir.is_dir():
+                model_files += list(ocr_dir.rglob("*.safetensors"))
         for f in model_files:
             try:
                 with open(f, "rb") as fh:

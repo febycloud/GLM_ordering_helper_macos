@@ -36,13 +36,9 @@ from backend.evaluate import select_fixed3
 
 
 def run_yolo_worker(core_id: int, req_queue, ocr_queue, ready_queue):
-    # 绑定物理核
-    try:
-        p = psutil.Process()
-        p.cpu_affinity([core_id])
-    except Exception:
-        pass
-
+    # 注意：macOS/Apple Silicon 不暴露 CPU 亲和性（psutil 无 cpu_affinity），
+    # core_id 仅用于日志和与 Linux 路径保持接口一致，不做真实的核绑定。
+    # 进程的并行度由进程数 + BLAS 线程数（见文件顶部环境变量）共同决定。
     detector = YOLO(str(DETECTOR))
     _ = detector.predict(
         Image.new("RGB", (YOLO_IMGSZ, YOLO_IMGSZ)),

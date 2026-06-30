@@ -183,13 +183,9 @@ def assign_prompt_globally(rows: list[dict], prompt: list[str]) -> list[dict]:
 
 
 def run_ocr_worker_direct(core_id: int, req_queue, res_queue, ready_queue):
-    # 绑定物理核
-    try:
-        p = psutil.Process()
-        p.cpu_affinity([core_id])
-    except Exception:
-        pass
-
+    # 注意：macOS/Apple Silicon 不暴露 CPU 亲和性（psutil 无 cpu_affinity），
+    # core_id 仅用于日志和与 Linux 路径保持接口一致，不做真实的核绑定。
+    # 进程的并行度由进程数 + BLAS 线程数（见文件顶部环境变量）共同决定。
     configure_env()
     from paddleocr import TextRecognition
 
