@@ -37,7 +37,7 @@ VENV_PY="$VENV_DIR/bin/python"
 NEED_INSTALL=0
 if [ ! -x "$VENV_PY" ]; then
     NEED_INSTALL=1
-elif ! "$VENV_PY" -c "import fastapi, uvicorn, psutil, ultralytics, paddleocr, paddlex, paddle, cv2, PIL, numpy" >/dev/null 2>&1; then
+elif ! "$VENV_PY" "$SCRIPT_DIR/scripts/check_backend_env.py" >/dev/null 2>&1; then
     NEED_INSTALL=1
 fi
 

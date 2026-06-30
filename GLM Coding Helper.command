@@ -22,7 +22,7 @@ VENV_PY="$ROOT/.venv_paddle/bin/python"
 needs_install=0
 if [[ ! -x "$VENV_PY" ]]; then
   needs_install=1
-elif ! "$VENV_PY" -c "import fastapi, uvicorn, psutil, tkinter, ultralytics, paddleocr, paddlex, paddle, cv2, PIL, numpy" >/dev/null 2>&1; then
+elif ! "$VENV_PY" "$ROOT/scripts/check_backend_env.py" --check-tk >/dev/null 2>&1; then
   needs_install=1
 fi
 
@@ -43,9 +43,11 @@ if [[ ! -f "$ROOT/models/weights/yolo-captcha-detector.pt" ]]; then
   exit 1
 fi
 
-if ! "$VENV_PY" -c "import tkinter" >/dev/null 2>&1; then
+if ! "$VENV_PY" "$ROOT/scripts/check_backend_env.py" --check-tk >/dev/null 2>&1; then
   echo "[ERROR] This Python is missing tkinter."
-  echo "Homebrew users can install it with: brew install python-tk@3.12"
+  echo "Or the backend environment is incomplete."
+  echo "Homebrew users can install Tk with: brew install python-tk@3.12"
+  echo "Then rerun this launcher to repair .venv_paddle."
   read -r -p "Press Enter to close this window..." _
   exit 1
 fi

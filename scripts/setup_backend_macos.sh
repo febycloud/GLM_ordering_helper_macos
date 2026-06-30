@@ -136,6 +136,31 @@ if [ "$NO_SMOKE_TEST" -eq 0 ]; then
     echo "[INFO] 运行导入冒烟测试..."
     "$VENV_PY" -c "import paddle; paddle.utils.run_check(); import PIL, cv2, numpy, ultralytics; from paddleocr import TextRecognition; print('core imports ok')"
     "$VENV_PY" -c "import fastapi, uvicorn, psutil; print('backend deps ok')"
+    echo "[INFO] 验证默认 OCR 模型..."
+    "$VENV_PY" - <<'PY'
+import json
+import os
+from pathlib import Path
+
+root = Path.cwd()
+config_path = root / "config.json"
+config = {}
+if config_path.exists():
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+model_name = (
+    os.environ.get("CNCAPTCHA_CPU_OCR_MODEL")
+    or os.environ.get("GLM_OCR_MODEL")
+    or str(config.get("ocr_model", "PP-OCRv6_tiny_rec"))
+).strip()
+
+from paddleocr import TextRecognition
+
+recognizer = TextRecognition(model_name=model_name, device="cpu", engine="paddle_dynamic")
+close = getattr(recognizer, "close", None)
+if callable(close):
+    close()
+print(f"ocr model ok: {model_name}")
+PY
 fi
 
 # ── 5. 检查 YOLO 权重 ──────────────────────────────────────────
@@ -155,7 +180,7 @@ cat <<EOF
 
   GUI 模式（弹 Tk 窗口）：
     $VENV_PY $ROOT/backend/gui.py
-  或直接双击：start-backend-pipeline-gui.command
+  或直接双击：GLM Coding Helper.command
 
   headless 模式：
     $VENV_PY -m backend.server

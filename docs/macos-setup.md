@@ -42,13 +42,15 @@ uname -m
 brew install python@3.12
 ```
 
-如果要使用 Tk 可视化窗口，还需安装 Tk 支持：
+`one-click-start.command` 会启动 Tk 可视化窗口，**Tk 是必需的**。Homebrew 的 Python 默认不带 tkinter，需要单独安装：
 
 ```bash
 brew install python-tk@3.12
 ```
 
-只使用 `one-click-start.command` 的 headless 模式时不需要 Tk。
+> 也可以直接用 [python.org 官方安装包](https://www.python.org/downloads/macos/)（3.12），官方包自带 tkinter，不需要额外装。但官方安装的 Python 可能不在 PATH 里，`one-click-start.command` 找不到时可以按下面的「手动指定 Python 路径」处理。
+
+如果没装 tkinter 会报错 `ModuleNotFoundError: No module named '_tkinter'` 或 `Tk is unavailable`，装好 `python-tk@3.12` 后重新双击 `one-click-start.command` 即可。
 
 安装后确认：
 
@@ -60,7 +62,7 @@ python3.12 --version
 
 ### 2. 油猴脚本
 
-在 Chrome / Edge 安装 Tampermonkey 并安装本项目的 `glm-coding-helper.user.js`，步骤和 Windows 完全相同，详见 [README.md](../README.md) 的「安装油猴脚本」一节。
+在 Chrome / Edge 安装 Tampermonkey 并安装本项目的 `glm-coding-helper.user.js`，详见 [README.md](../README.md) 的「安装油猴脚本」一节。
 
 ### 3. 网络
 
