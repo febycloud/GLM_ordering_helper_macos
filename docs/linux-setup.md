@@ -201,7 +201,7 @@ curl http://127.0.0.1:8888/health
 | --- | --- | --- | --- |
 | 一键启动 | `one-click-start.cmd` | `one-click-start.command` | `one-click-start.sh` |
 | one-click 后端 | `captcha_server.py`（Tk） | `backend.server` pipeline（headless） | `captcha_server_headless.py` |
-| 日常 GUI | one-click 自带 Tk | `start-backend-pipeline-gui.command` → `backend/gui.py` | 无（可手动 `start_backend.py` 不带 `--headless`，需 tkinter） |
+| 日常 GUI | one-click 自带 Tk | 无（macOS 分支使用 headless） | 无（可手动 `start_backend.py` 不带 `--headless`，需 tkinter） |
 | GPU | 支持 | 不支持 | 支持（NVIDIA） |
 | 环境搭建 | `bootstrap_windows.ps1` | `setup_backend_macos.sh` | `setup_backend_linux.sh` |
 | PyPI 镜像 | 自动探测 | 需手动 `--pip-arg` | 自动探测 |

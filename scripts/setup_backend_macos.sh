@@ -178,11 +178,10 @@ cat <<EOF
 
 完成。启动后端：
 
-  GUI 模式（弹 Tk 窗口）：
-    $VENV_PY $ROOT/backend/gui.py
-  或直接双击：GLM Coding Helper.command
+  双击：
+    one-click-start.command
 
-  headless 模式：
+  或手动启动：
     $VENV_PY -m backend.server
 
   macOS 仅支持 CPU，没有 GPU 模式。

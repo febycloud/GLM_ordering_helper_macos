@@ -18,7 +18,15 @@ if getattr(sys, 'frozen', False):
 else:
     ROOT = Path(__file__).resolve().parent.parent
 DETECTOR = ROOT / "models" / "weights" / "yolo-captcha-detector.pt"
-YOLO_IMGSZ = 448
+def _env_int(name: str, default: int, minimum: int) -> int:
+    try:
+        value = int(os.environ.get(name, "") or default)
+    except ValueError:
+        return default
+    return max(minimum, value)
+
+
+YOLO_IMGSZ = _env_int("CNCAPTCHA_YOLO_IMGSZ", 448, 64)
 
 # YOLO 单线程！多进程并行靠进程数
 for _key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):

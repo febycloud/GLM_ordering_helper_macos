@@ -45,10 +45,7 @@ def _resolve_ocr_model() -> str:
     ).strip() or DEFAULT_OCR_MODEL
 
 
-def check_backend_env(check_tk: bool = False) -> None:
-    if check_tk:
-        import tkinter  # noqa: F401
-
+def check_backend_env() -> None:
     import cv2  # noqa: F401
     import fastapi  # noqa: F401
     import numpy  # noqa: F401
@@ -76,10 +73,9 @@ def check_backend_env(check_tk: bool = False) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--check-tk", action="store_true")
-    args = parser.parse_args(argv)
+    parser.parse_args(argv)
     try:
-        check_backend_env(check_tk=args.check_tk)
+        check_backend_env()
     except Exception as exc:
         print(str(exc), file=sys.stderr)
         return 1

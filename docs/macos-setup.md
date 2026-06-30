@@ -42,16 +42,6 @@ uname -m
 brew install python@3.12
 ```
 
-`one-click-start.command` 会启动 Tk 可视化窗口，**Tk 是必需的**。Homebrew 的 Python 默认不带 tkinter，需要单独安装：
-
-```bash
-brew install python-tk@3.12
-```
-
-> 也可以直接用 [python.org 官方安装包](https://www.python.org/downloads/macos/)（3.12），官方包自带 tkinter，不需要额外装。但官方安装的 Python 可能不在 PATH 里，`one-click-start.command` 找不到时可以按下面的「手动指定 Python 路径」处理。
-
-如果没装 tkinter 会报错 `ModuleNotFoundError: No module named '_tkinter'` 或 `Tk is unavailable`，装好 `python-tk@3.12` 后重新双击 `one-click-start.command` 即可。
-
 安装后确认：
 
 ```bash
@@ -68,22 +58,22 @@ python3.12 --version
 
 首次安装会从 PyPI 拉取 PaddlePaddle、Ultralytics 等包，**mac 的 wheel 体积较大**，请保持网络畅通。必要时可走国内镜像（见下文「命令行手动安装」）。
 
-## 一键安装并启动 GUI（推荐）
+## 一键安装并启动后端（推荐）
 
 下载 Release 压缩包并解压后，双击：
 
 ```text
-GLM Coding Helper.command
+one-click-start.command
 ```
 
 首次双击如果被 macOS 的 Gatekeeper 拦截（提示「无法打开」），用以下任一方式解决：
 
-- 在 Finder 里**右键点击** `GLM Coding Helper.command` → 选择「打开」→ 在弹窗里点「打开」；
+- 在 Finder 里**右键点击** `one-click-start.command` → 选择「打开」→ 在弹窗里点「打开」；
 - 或在终端里赋予可执行权限后运行：
 
 ```bash
-chmod +x "GLM Coding Helper.command"
-./"GLM Coding Helper.command"
+chmod +x one-click-start.command uninstall.command
+./one-click-start.command
 ```
 
 这个脚本会自动完成：
@@ -92,7 +82,7 @@ chmod +x "GLM Coding Helper.command"
 2. 创建虚拟环境 `.venv_paddle`；
 3. 安装 CPU 依赖（`requirements-backend-cpu.txt`）；
 4. 检查 YOLO 权重；
-5. 打开 Tk GUI，并启动后端。
+5. 启动无 GUI 的 headless 后端。
 
 启动成功后监听：
 
@@ -100,15 +90,9 @@ chmod +x "GLM Coding Helper.command"
 http://127.0.0.1:8888
 ```
 
-## 日常启动（带可视化窗口）
+## 日常启动（无 GUI）
 
-环境装好后，日常仍然双击 `GLM Coding Helper.command`。它会弹出 Tk 窗口，实时显示：
-
-- **顶部状态栏**：系统状态（启动中 / 运行中）、YOLO / OCR worker 数、监听地址；
-- **中间识别列表**：最近识别结果（提示字、预测字、置信度、yolo/ocr 耗时）；
-- **底部日志框**：后端 stdout 实时滚动。
-
-关闭窗口会自动停止后端子进程。
+环境装好后，日常仍然双击 `one-click-start.command`。它会打开终端窗口并启动后端，日志直接显示在终端里。关闭终端窗口或按 `Ctrl+C` 会停止后端。
 
 如果端口 8888 被占用，脚本会用 `lsof` 检测并提示是否停止占用进程。
 
@@ -136,9 +120,6 @@ http://127.0.0.1:8888
 脚本完成后，手动启动：
 
 ```bash
-# GUI 模式（弹 Tk 窗口）
-./.venv_paddle/bin/python backend/gui.py
-
 # headless 模式
 ./.venv_paddle/bin/python -m backend.server
 
@@ -189,6 +170,18 @@ CNCAPTCHA_PORT=8889 ./.venv_paddle/bin/python -m backend.server
 | 支持架构 | arm64（Apple Silicon） |
 | 识别模型 | YOLO + PaddleOCR |
 
+## 卸载 / 清理本地环境
+
+如果以后不想继续使用，可以双击：
+
+```text
+uninstall.command
+```
+
+它会清理当前项目文件夹内生成的本地运行文件，包括 `.venv_paddle`、pip 缓存、Paddle/PaddleX 缓存、下载的 OCR 模型缓存、日志和调试图片。它不会删除源码、Git 仓库、系统 Python、Homebrew、Chrome 或 Tampermonkey。
+
+如果想彻底删除项目，运行卸载脚本后再删除整个项目文件夹即可。
+
 ## 安装后验证
 
 环境安装完成后，先运行：
@@ -215,7 +208,7 @@ macOS Gatekeeper 拦截。右键点击文件 → 「打开」→ 弹窗里点「
 
 ### 启动后 OCR worker 一直不 ready
 
-首次启动需要下载模型并做 JIT 预热，可能需要 30 秒到几分钟。观察 Tk 窗口底部日志，看到类似 `[ocr] Core N ready` 表示就绪。如果长时间卡住，检查网络（模型下载失败）或查看日志里的错误信息。
+首次启动需要下载模型并做 JIT 预热，可能需要 30 秒到几分钟。观察终端日志，看到类似 `[ocr] Core N ready` 表示就绪。如果长时间卡住，检查网络（模型下载失败）或查看日志里的错误信息。
 
 ### `pip install` 很慢或失败
 

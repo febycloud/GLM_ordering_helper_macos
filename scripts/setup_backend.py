@@ -38,6 +38,10 @@ def apply_portable_env() -> None:
         os.environ.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
         os.environ.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
         os.environ.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
+        os.environ.setdefault("OMP_NUM_THREADS", "1")
+        os.environ.setdefault("MKL_NUM_THREADS", "1")
+        os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+        os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 
 def venv_python(venv: Path) -> Path:
@@ -174,10 +178,8 @@ def main(argv: list[str] | None = None) -> int:
         print("Start headless backend:", flush=True)
         print("  python scripts\\tools\\start_backend.py --headless --mode auto", flush=True)
     else:
-        print("Start GUI backend:", flush=True)
-        print("  ./start-backend-pipeline-gui.command", flush=True)
-        print("Start headless backend:", flush=True)
-        print("  CNCAPTCHA_HEADLESS=1 ./scripts/start_backend.sh", flush=True)
+        print("Start backend:", flush=True)
+        print("  ./one-click-start.command", flush=True)
     return 0
 
 

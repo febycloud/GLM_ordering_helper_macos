@@ -4,7 +4,7 @@ This macOS fork is tuned for MacBook Air M2 / macOS 26 and uses the local CPU
 pipeline backend. The normal entry point is:
 
 ```bash
-./"GLM Coding Helper.command"
+./one-click-start.command
 ```
 
 For manual setup:
@@ -14,12 +14,6 @@ For manual setup:
 ```
 
 For manual startup:
-
-```bash
-./.venv_paddle/bin/python backend/gui.py
-```
-
-Headless startup:
 
 ```bash
 ./.venv_paddle/bin/python -m backend.server
@@ -53,7 +47,8 @@ Runtime files are kept inside the project folder:
 | `.paddle_home/` | Paddle cache |
 | `.paddlex_cache/` | PaddleX cache |
 
-To uninstall, delete the project folder.
+To clean local runtime files without deleting source code, double-click
+`uninstall.command`. To fully uninstall everything, delete the project folder.
 
 ## Useful Environment Variables
 

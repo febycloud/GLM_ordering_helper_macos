@@ -16,27 +16,35 @@ TRUE_VALUES = {"1", "true", "yes", "on", "y"}
 FALSE_VALUES = {"0", "false", "no", "off", "n"}
 
 
-def apply_portable_env_defaults() -> None:
+def apply_portable_env_defaults_to(env: dict[str, str]) -> None:
     if os.name == "nt":
         return
-    os.environ.setdefault("PYTHONUTF8", "1")
-    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
-    os.environ.setdefault("PIP_CACHE_DIR", str(ROOT / ".cache" / "pip"))
-    os.environ.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
-    os.environ.setdefault("XDG_CONFIG_HOME", str(ROOT / ".config"))
-    os.environ.setdefault("PADDLE_HOME", str(ROOT / ".paddle_home" / ".cache" / "paddle"))
-    os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(ROOT / ".paddlex_cache"))
-    os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
-    os.environ.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".config" / "Ultralytics"))
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PIP_CACHE_DIR", str(ROOT / ".cache" / "pip"))
+    env.setdefault("XDG_CACHE_HOME", str(ROOT / ".cache"))
+    env.setdefault("XDG_CONFIG_HOME", str(ROOT / ".config"))
+    env.setdefault("PADDLE_HOME", str(ROOT / ".paddle_home" / ".cache" / "paddle"))
+    env.setdefault("PADDLE_PDX_CACHE_HOME", str(ROOT / ".paddlex_cache"))
+    env.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+    env.setdefault("YOLO_CONFIG_DIR", str(ROOT / ".config" / "Ultralytics"))
     if sys.platform == "darwin" and platform.machine() == "arm64":
-        os.environ.setdefault("CNCAPTCHA_HOST", "127.0.0.1")
-        os.environ.setdefault("CNCAPTCHA_MODE", "cpu_parallel")
-        os.environ.setdefault("CNCAPTCHA_OCR_MODE", "cpu_parallel")
-        os.environ.setdefault("CNCAPTCHA_SKIP_GPU_DETECT", "1")
-        os.environ.setdefault("CNCAPTCHA_YOLO_DEVICE", "cpu")
-        os.environ.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
-        os.environ.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
-        os.environ.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
+        env.setdefault("CNCAPTCHA_HOST", "127.0.0.1")
+        env.setdefault("CNCAPTCHA_MODE", "cpu_parallel")
+        env.setdefault("CNCAPTCHA_OCR_MODE", "cpu_parallel")
+        env.setdefault("CNCAPTCHA_SKIP_GPU_DETECT", "1")
+        env.setdefault("CNCAPTCHA_YOLO_DEVICE", "cpu")
+        env.setdefault("CNCAPTCHA_CPU_OCR_WORKERS", "2")
+        env.setdefault("CNCAPTCHA_PIPELINE_YOLO_WORKERS", "1")
+        env.setdefault("CNCAPTCHA_PIPELINE_OCR_WORKERS", "2")
+        env.setdefault("OMP_NUM_THREADS", "1")
+        env.setdefault("MKL_NUM_THREADS", "1")
+        env.setdefault("OPENBLAS_NUM_THREADS", "1")
+        env.setdefault("NUMEXPR_NUM_THREADS", "1")
+
+
+def apply_portable_env_defaults() -> None:
+    apply_portable_env_defaults_to(os.environ)
 
 
 apply_portable_env_defaults()
